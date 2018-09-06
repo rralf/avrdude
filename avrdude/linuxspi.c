@@ -56,10 +56,6 @@
 #include <string.h>
 #include <math.h>
 
-/**
- * Data for the programmer
- */
-
 struct pdata
 {
     unsigned int speedHz;
@@ -361,7 +357,7 @@ void linuxspi_initpgm(PROGRAMMER * pgm)
 
 const char linuxspi_desc[] = "SPI using Linux spidev driver";
 
-#else
+#else /* HAVE_SPI */
 
 void linuxspi_initpgm(PROGRAMMER * pgm)
 {
