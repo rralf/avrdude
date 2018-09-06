@@ -79,7 +79,7 @@ typedef enum {
  * @brief Sends/receives a message in full duplex mode
  * @return -1 on failure, otherwise number of bytes sent/recieved
  */
-static int linuxspi_spi_duplex(PROGRAMMER* pgm, unsigned char* tx, unsigned char* rx, int len)
+static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigned char *rx, int len)
 {
     int fd = open(pgm->port, O_RDWR);
     if (fd < 0)
@@ -283,7 +283,7 @@ static int linuxspi_initialize(PROGRAMMER* pgm, AVRPART* p)
     return 0;
 }
 
-static int linuxspi_cmd(PROGRAMMER* pgm, unsigned char cmd[4], unsigned char res[4])
+static int linuxspi_cmd(PROGRAMMER *pgm, const unsigned char *cmd, unsigned char *res)
 {
     return linuxspi_spi_duplex(pgm, cmd, res, 4);
 }
