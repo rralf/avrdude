@@ -227,17 +227,14 @@ static void linuxspi_close(PROGRAMMER *pgm)
 
 static void linuxspi_disable(PROGRAMMER* pgm)
 {
-    //do nothing
 }
 
 static void linuxspi_enable(PROGRAMMER* pgm)
 {
-    //do nothing
 }
 
 static void linuxspi_display(PROGRAMMER* pgm, const char* p)
 {
-    //do nothing
 }
 
 static int linuxspi_initialize(PROGRAMMER* pgm, AVRPART* p)
