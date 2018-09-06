@@ -182,38 +182,30 @@ static void linuxspi_teardown(PROGRAMMER* pgm)
     free(pgm->cookie);
 }
 
-static int linuxspi_open(PROGRAMMER* pgm, char* port)
+static int linuxspi_open(PROGRAMMER *pgm, char *port)
 {
-    char* buf;
+    char buf[32];
 
-    if (port == 0 || strcmp(port, "unknown") == 0) //unknown port
-    {
-        fprintf(stderr, "%s: error: No port specified. Port should point to an SPI interface.\n", progname);
+    if (!port || !strcmp(port, "unknown")) {
+        fprintf(stderr, "%s: error: No port specified. Port should point to an spidev device.\n", progname);
         exit(1);
     }
 
-    if (pgm->pinno[PIN_AVR_RESET] == 0)
-    {
+    // TODO: Why disallow pin 0?
+    if (pgm->pinno[PIN_AVR_RESET] == 0) {
         fprintf(stderr, "%s: error: No pin assigned to AVR RESET.\n", progname);
         exit(1);
     }
 
     //export reset pin
-    buf = malloc(32);
-    sprintf(buf, "%d", pgm->pinno[PIN_AVR_RESET] &~PIN_INVERSE);
+    snprintf(buf, sizeof(buf), "%d", pgm->pinno[PIN_AVR_RESET] &~PIN_INVERSE);
     if (linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_EXPORT, pgm->pinno[PIN_AVR_RESET], buf) < 0)
-    {
-        free(buf);
         return -1;
-    }
-    free(buf);
 
     //set reset to output active and write initial value at same time
     //this prevents glitches https://www.kernel.org/doc/Documentation/gpio/sysfs.txt
     if (linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], pgm->pinno[PIN_AVR_RESET]&PIN_INVERSE ? "high" : "low") < 0)
-    {
         return -1;
-    }
 
     //save the port to our data
     strcpy(pgm->port, port);
