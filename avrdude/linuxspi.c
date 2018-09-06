@@ -56,6 +56,8 @@
 #include <string.h>
 #include <math.h>
 
+#define LINUXSPI "linuxspi"
+
 struct pdata
 {
     unsigned int speedHz;
@@ -317,7 +319,7 @@ static int linuxspi_chip_erase(PROGRAMMER* pgm, AVRPART* p)
 
 void linuxspi_initpgm(PROGRAMMER * pgm)
 {
-    strcpy(pgm->type, "linuxspi");
+    strcpy(pgm->type, LINUXSPI);
 
     pgm_fill_old_pins(pgm); // TODO to be removed if old pin data no longer needed
 
