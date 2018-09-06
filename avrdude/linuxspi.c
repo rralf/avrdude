@@ -77,14 +77,16 @@ typedef enum {
  */
 static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigned char *rx, int len)
 {
-    int fd = open(pgm->port, O_RDWR);
-    if (fd < 0)
-    {
+    struct spi_ioc_transfer tr;
+    int fd, ret;
+
+    fd  = open(pgm->port, O_RDWR);
+    if (fd < 0) {
         fprintf(stderr, "\n%s: error: Unable to open SPI port %s", progname, pgm->port);
-        return -1; //error
+        return -1;
     }
 
-    struct spi_ioc_transfer tr = {
+    tr = (struct spi_ioc_transfer) {
         .tx_buf = (unsigned long)tx,
         .rx_buf = (unsigned long)rx,
         .len = len,
@@ -94,16 +96,13 @@ static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigne
         .bits_per_word = 8,
     };
 
-    int ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+    ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
     close(fd);
 
     if (ret != len)
-    {
         fprintf(stderr, "\n%s: error: Unable to send SPI message\n", progname);
-        return -1;
-    }
 
-    return ret;
+    return (ret == -1) ? -1 : 0;
 }
 
 /**
