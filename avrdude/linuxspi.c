@@ -165,13 +165,15 @@ static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, c
     return 0;
 }
 
-static void linuxspi_setup(PROGRAMMER* pgm)
+static void linuxspi_setup(PROGRAMMER *pgm)
 {
-    if ((pgm->cookie = malloc(sizeof(struct pdata))) == 0)
-    {
-        fprintf(stderr, "%s: linuxspi_setup(): Unable to allocate private memory.\n", progname);
+    pgm->cookie = malloc(sizeof(struct pdata));
+
+    if (!pgm->cookie) {
+        fprintf(stderr, "%s: linuxspi_setup(): Unable to allocate memory.\n", progname);
         exit(1);
     }
+
     memset(pgm->cookie, 0, sizeof(struct pdata));
 }
 
