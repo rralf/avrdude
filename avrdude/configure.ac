@@ -218,12 +218,6 @@ AC_CHECK_HEADERS([limits.h stdlib.h string.h])
 AC_CHECK_HEADERS([fcntl.h sys/ioctl.h sys/time.h termios.h unistd.h])
 AC_CHECK_HEADERS([ddk/hidsdi.h],,,[#include <windows.h>
 #include <setupapi.h>])
-AH_TEMPLATE([HAVE_SPIDEV],
-            [Define if spidev support is enabled for linux])
-AC_CHECK_HEADERS([linux/spi/spidev.h], [have_spidev=yes])
-if test x$have_spidev == xyes; then
-    AC_DEFINE([HAVE_SPIDEV])
-fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -341,6 +335,18 @@ AC_ARG_ENABLE(
 		esac],
 	[enabled_linuxgpio=no])	
 
+AC_ARG_ENABLE(
+	[linuxspi],
+	AC_HELP_STRING(
+		[--enable-linuxspi],
+		[Enable the Linux SPIDEV interface programmer type]),
+	[case "${enableval}" in
+		yes) enabled_linuxspi=yes ;;
+		no)  enabled_linuxspi=no ;;
+		*)   AC_MSG_ERROR(bad value ${enableval} for enable-linuxspi option) ;;
+		esac],
+	[enabled_linuxspi=no])
+
 DIST_SUBDIRS_AC='doc windows'
 
 if test "$enabled_doc" = "yes"; then
@@ -415,6 +421,14 @@ if test "$enabled_linuxgpio" = "yes"; then
 	confsubst="$confsubst -e /^@HAVE_LINUXGPIO_/d"
 else
 	confsubst="$confsubst -e /^@HAVE_LINUXGPIO_BEGIN@/,/^@HAVE_LINUXGPIO_END@/d"
+fi
+
+
+if test "$enabled_linuxspi" = "yes"; then
+	AC_DEFINE(HAVE_LINUXSPI, 1, [Linux SPI support enabled])
+	confsubst="$confsubst -e /^@HAVE_LINUXSPI_/d"
+else
+	confsubst="$confsubst -e /^@HAVE_LINUXSPI_BEGIN@/,/^@HAVE_LINUXSPI_END@/d"
 fi
 
 
@@ -595,9 +609,9 @@ else
    echo "DISABLED   linuxgpio"
 fi
 
-if test x$have_spidev = xyes; then
+if test x$enabled_linuxspi = xyes; then
    echo "ENABLED    linuxspi"
 else
-   echo "DISABLED   linnuxspi"
+   echo "DISABLED   linuxspi"
 fi
 

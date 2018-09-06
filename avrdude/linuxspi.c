@@ -29,7 +29,7 @@
 
 #include "linuxspi.h"
 
-#if HAVE_SPIDEV
+#if HAVE_LINUXSPI
 
 /**
  * Linux Kernel SPI Drivers
@@ -304,7 +304,7 @@ void linuxspi_initpgm(PROGRAMMER *pgm)
 
 const char linuxspi_desc[] = "SPI using Linux spidev driver";
 
-#else /* HAVE_SPI */
+#else /* !HAVE_LINUXSPI */
 
 void linuxspi_initpgm(PROGRAMMER * pgm)
 {
@@ -315,4 +315,4 @@ void linuxspi_initpgm(PROGRAMMER * pgm)
 
 const char linuxspi_desc[] = "SPI using Linux spidev driver (not available)";
 
-#endif
+#endif /* HAVE_LINUXSPI */
