@@ -20,14 +20,14 @@
  * 
  * Support for inversion of reset pin, Tim Chilton 02/05/2014
  */
- 
-#include "linuxspi.h"
+
 
 #include "ac_cfg.h"
 
 #include "avrdude.h"
-#include "avr.h"
-#include "pindefs.h"
+#include "libavrdude.h"
+
+#include "linuxspi.h"
 
 #if HAVE_SPIDEV
 
