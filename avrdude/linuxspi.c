@@ -306,16 +306,13 @@ static int linuxspi_chip_erase(PROGRAMMER *pgm, AVRPART *p)
     return 0;
 }
 
-void linuxspi_initpgm(PROGRAMMER * pgm)
+void linuxspi_initpgm(PROGRAMMER *pgm)
 {
     strcpy(pgm->type, LINUXSPI);
 
     pgm_fill_old_pins(pgm); // TODO to be removed if old pin data no longer needed
 
-    /*
-     * mandatory functions
-     */
-
+    /* mandatory functions */
     pgm->initialize     = linuxspi_initialize;
     pgm->display        = linuxspi_display;
     pgm->enable         = linuxspi_enable;
@@ -328,9 +325,7 @@ void linuxspi_initpgm(PROGRAMMER * pgm)
     pgm->read_byte      = avr_read_byte_default;
     pgm->write_byte     = avr_write_byte_default;
 
-    /*
-     * optional functions
-     */
+    /* optional functions */
     pgm->setup          = linuxspi_setup;
     pgm->teardown       = linuxspi_teardown;
 }
