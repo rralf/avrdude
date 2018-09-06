@@ -44,11 +44,13 @@
  * (at your option) any later version.
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
+#include <linux/gpio.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -63,14 +65,7 @@ struct pdata
     unsigned int speedHz;
 };
 
-typedef enum {
-    LINUXSPI_GPIO_DIRECTION,
-    LINUXSPI_GPIO_VALUE,
-    LINUXSPI_GPIO_EXPORT,
-    LINUXSPI_GPIO_UNEXPORT
-} LINUXSPI_GPIO_OP;
-
-static int fd_spidev;
+static int fd_spidev, fd_gpiochip, fd_linehandle;
 
 #define PDATA(pgm) ((struct pdata *)(pgm->cookie))
 #define IMPORT_PDATA(pgm) struct pdata *pdata = PDATA(pgm)
@@ -101,66 +96,6 @@ static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigne
     return (ret == -1) ? -1 : 0;
 }
 
-/**
- * @brief Performs an operation on a gpio. Writes to stderr if error.
- * @param op Operation to perform
- * @param gpio
- * @return -1 if failed, 0 otherwise
- */
-static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, char* val)
-{
-    char* fn = malloc(PATH_MAX); //filename
-    gpio &= ~PIN_INVERSE; // Remove the inversion flag
-
-    switch(op)
-    {
-        case LINUXSPI_GPIO_DIRECTION:
-            sprintf(fn, "/sys/class/gpio/gpio%d/direction", gpio);
-            break;
-        case LINUXSPI_GPIO_EXPORT:
-            sprintf(fn, "/sys/class/gpio/export");
-            break;
-        case LINUXSPI_GPIO_UNEXPORT:
-            sprintf(fn, "/sys/class/gpio/unexport");
-            break;
-        case LINUXSPI_GPIO_VALUE:
-            sprintf(fn, "/sys/class/gpio/gpio%d/value", gpio);
-            break;
-        default:
-            fprintf(stderr, "%s: linuxspi_gpio_op_wr(): Unknown op %d", progname, op);
-            return -1;
-    }
-
-    FILE* f = fopen(fn, "w");
-
-    int fopen_retries = 0;
-    while (!f && fopen_retries < 100)
-    {
-        usleep(20000);
-        f = fopen(fn, "w");
-        fopen_retries++;
-    }
-
-    if (!f)
-    {
-        fprintf(stderr, "%s: linuxspi_gpio_op_wr(): Unable to open file %s", progname, fn);
-        free(fn); //we no longer need the path
-        return -1;
-    }
-
-    if (fprintf(f, val) < 0)
-    {
-        fprintf(stderr, "%s: linuxspi_gpio_op_wr(): Unable to write file %s with %s", progname, fn, val);
-        free(fn); //we no longer need the path
-        return -1;
-    }
-
-    fclose(f);
-    free(fn); //we no longer need the path
-
-    return 0;
-}
-
 static void linuxspi_setup(PROGRAMMER *pgm)
 {
     pgm->cookie = malloc(sizeof(struct pdata));
@@ -180,18 +115,33 @@ static void linuxspi_teardown(PROGRAMMER* pgm)
 
 static int linuxspi_open(PROGRAMMER *pgm, char *port)
 {
-    char buf[32];
+    const char *port_error = "%s: error: Unknown port specification. Please use the format /dev/spidev:/dev/gpiochip[:resetno]\n";
+    char *spidev, *gpiochip, *reset_pin;
+    struct gpiohandle_request req;
+    struct gpiohandle_data data;
+    int ret;
 
     if (!port || !strcmp(port, "unknown")) {
         fprintf(stderr, "%s: error: No port specified. Port should point to an spidev device.\n", progname);
-        exit(1);
+        return -1;
     }
 
-    // TODO: Why disallow pin 0?
-    if (pgm->pinno[PIN_AVR_RESET] == 0) {
-        fprintf(stderr, "%s: error: No pin assigned to AVR RESET.\n", progname);
-        exit(1);
+    spidev = strtok(port, ":");
+    if (!spidev) {
+        fprintf(stderr, port_error, progname);
+        return -1;
     }
+
+    gpiochip = strtok(NULL, ":");
+    if (!gpiochip) {
+        fprintf(stderr, port_error, progname);
+        return -1;
+    }
+
+    /* optional: override reset pin in configuration */
+    reset_pin = strtok(NULL, ":");
+    if (reset_pin)
+        pgm->pinno[PIN_AVR_RESET] = strtoul(reset_pin, NULL, 0);
 
     strcpy(pgm->port, port);
     fd_spidev = open(pgm->port, O_RDWR);
@@ -200,31 +150,53 @@ static int linuxspi_open(PROGRAMMER *pgm, char *port)
         return -1;
     }
 
-    //export reset pin
-    snprintf(buf, sizeof(buf), "%d", pgm->pinno[PIN_AVR_RESET] &~PIN_INVERSE);
-    if (linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_EXPORT, pgm->pinno[PIN_AVR_RESET], buf) < 0)
-        return -1;
+    fd_gpiochip = open(gpiochip, 0);
+    if (fd_gpiochip < 0) {
+        close(fd_spidev);
+        fprintf(stderr, "\n%s error: Unable to open the gpiochip %s", progname, gpiochip);
+        ret = -1;
+        goto close_spidev;
+    }
 
-    //set reset to output active and write initial value at same time
-    //this prevents glitches https://www.kernel.org/doc/Documentation/gpio/sysfs.txt
-    if (linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], pgm->pinno[PIN_AVR_RESET]&PIN_INVERSE ? "high" : "low") < 0)
-        return -1;
+    strcpy(req.consumer_label, progname);
+    req.lines = 1;
+    req.lineoffsets[0] = pgm->pinno[PIN_AVR_RESET];
+    req.flags = GPIOHANDLE_REQUEST_OUTPUT;
+
+    ret = ioctl(fd_gpiochip, GPIO_GET_LINEHANDLE_IOCTL, &req);
+    if (ret == -1) {
+        ret = -errno;
+        goto close_gpiochip;
+    }
+
+    fd_linehandle = req.fd;
+
+    /*
+     * Set the reset state and keep it. The pin will be released and set back to
+     * its initial value, once the fd_gpiochip is closed.
+     */
+    data.values[0] = !!(pgm->pinno[PIN_AVR_RESET] & PIN_INVERSE);
+    ret = ioctl(fd_linehandle, GPIOHANDLE_SET_LINE_VALUES_IOCTL, &data);
+    if (ret == -1) {
+        ret = -errno;
+        goto close_out;
+    }
 
     return 0;
+
+close_out:
+    close(fd_linehandle);
+close_gpiochip:
+    close(fd_gpiochip);
+close_spidev:
+    close(fd_spidev);
+    return ret;
 }
 
 static void linuxspi_close(PROGRAMMER *pgm)
 {
-    char buf[32];
-
     close(fd_spidev);
-
-    //set reset to input
-    linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], "in");
-
-    //unexport reset
-    snprintf(buf, sizeof(buf), "%d", pgm->pinno[PIN_AVR_RESET]);
-    linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_UNEXPORT, pgm->pinno[PIN_AVR_RESET], buf);
+    close(fd_gpiochip);
 }
 
 static void linuxspi_disable(PROGRAMMER* pgm)
