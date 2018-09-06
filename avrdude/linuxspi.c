@@ -239,14 +239,13 @@ static void linuxspi_display(PROGRAMMER* pgm, const char* p)
 {
 }
 
-static int linuxspi_initialize(PROGRAMMER* pgm, AVRPART* p)
+static int linuxspi_initialize(PROGRAMMER *pgm, AVRPART *p)
 {
-    int tries, rc;
+    int tries, ret;
 
-    if (p->flags & AVRPART_HAS_TPI)
-    {
-        //we do not support tpi..this is a dedicated SPI thing
-        fprintf(stderr, "%s: error: Programmer %s does not support TPI\n", progname, pgm->type);
+    if (p->flags & AVRPART_HAS_TPI) {
+        /* We do not support tpi. This is a dedicated SPI thing */
+        fprintf(stderr, "%s: error: Programmer " LINUXSPI " does not support TPI\n", progname);
         return -1;
     }
 
@@ -254,20 +253,15 @@ static int linuxspi_initialize(PROGRAMMER* pgm, AVRPART* p)
     tries = 0;
     do
     {
-        rc = pgm->program_enable(pgm, p);
-        if (rc == 0 || rc == -1)
+        ret = pgm->program_enable(pgm, p);
+        if (ret == 0 || ret == -1)
             break;
-        tries++;
-    }
-    while(tries < 65);
+    } while(tries++ < 65);
 
-    if (rc)
-    {
+    if (ret)
         fprintf(stderr, "%s: error: AVR device not responding\n", progname);
-        return -1;
-    }
 
-    return 0;
+    return ret;
 }
 
 static int linuxspi_cmd(PROGRAMMER *pgm, const unsigned char *cmd, unsigned char *res)
