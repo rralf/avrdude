@@ -18,6 +18,7 @@ autom4te.cache
 configure
 depcomp
 install-sh
+libtool
 compile
 missing
 mkinstalldirs
@@ -35,6 +36,11 @@ avrdude
 
 *.o
 *.a
+*.lo
+*.la
 doc/mdate-sh
 doc/texinfo.tex
 ylwrap
+ltmain.sh
+m4/
+.libs/
