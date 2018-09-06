@@ -269,13 +269,11 @@ static int linuxspi_cmd(PROGRAMMER *pgm, const unsigned char *cmd, unsigned char
     return linuxspi_spi_duplex(pgm, cmd, res, 4);
 }
 
-static int linuxspi_program_enable(PROGRAMMER* pgm, AVRPART* p)
+static int linuxspi_program_enable(PROGRAMMER *pgm, AVRPART *p)
 {
-    unsigned char cmd[4];
-    unsigned char res[4];
+    unsigned char cmd[4], res[4];
 
-    if (p->op[AVR_OP_PGM_ENABLE] == NULL)
-    {
+    if (!p->op[AVR_OP_PGM_ENABLE]) {
         fprintf(stderr, "%s: error: program enable instruction not defined for part \"%s\"\n", progname, p->desc);
         return -1;
     }
