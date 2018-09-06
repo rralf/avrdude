@@ -70,6 +70,8 @@ typedef enum {
     LINUXSPI_GPIO_UNEXPORT
 } LINUXSPI_GPIO_OP;
 
+static int fd_spidev;
+
 #define PDATA(pgm) ((struct pdata *)(pgm->cookie))
 #define IMPORT_PDATA(pgm) struct pdata *pdata = PDATA(pgm)
 
@@ -80,13 +82,7 @@ typedef enum {
 static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigned char *rx, int len)
 {
     struct spi_ioc_transfer tr;
-    int fd, ret;
-
-    fd  = open(pgm->port, O_RDWR);
-    if (fd < 0) {
-        fprintf(stderr, "\n%s: error: Unable to open SPI port %s", progname, pgm->port);
-        return -1;
-    }
+    int ret;
 
     tr = (struct spi_ioc_transfer) {
         .tx_buf = (unsigned long)tx,
@@ -98,9 +94,7 @@ static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigne
         .bits_per_word = 8,
     };
 
-    ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
-    close(fd);
-
+    ret = ioctl(fd_spidev, SPI_IOC_MESSAGE(1), &tr);
     if (ret != len)
         fprintf(stderr, "\n%s: error: Unable to send SPI message\n", progname);
 
@@ -199,6 +193,13 @@ static int linuxspi_open(PROGRAMMER *pgm, char *port)
         exit(1);
     }
 
+    strcpy(pgm->port, port);
+    fd_spidev = open(pgm->port, O_RDWR);
+    if (fd_spidev < 0) {
+        fprintf(stderr, "\n%s: error: Unable to open the spidev device %s", progname, pgm->port);
+        return -1;
+    }
+
     //export reset pin
     snprintf(buf, sizeof(buf), "%d", pgm->pinno[PIN_AVR_RESET] &~PIN_INVERSE);
     if (linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_EXPORT, pgm->pinno[PIN_AVR_RESET], buf) < 0)
@@ -209,15 +210,14 @@ static int linuxspi_open(PROGRAMMER *pgm, char *port)
     if (linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], pgm->pinno[PIN_AVR_RESET]&PIN_INVERSE ? "high" : "low") < 0)
         return -1;
 
-    //save the port to our data
-    strcpy(pgm->port, port);
-
     return 0;
 }
 
 static void linuxspi_close(PROGRAMMER *pgm)
 {
     char buf[32];
+
+    close(fd_spidev);
 
     //set reset to input
     linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], "in");
