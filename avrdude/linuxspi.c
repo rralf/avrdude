@@ -76,30 +76,6 @@ typedef enum {
 #define IMPORT_PDATA(pgm) struct pdata *pdata = PDATA(pgm)
 
 /**
- * Function Prototypes
- */
-
-//linuxspi specific functions
-static int linuxspi_spi_duplex(PROGRAMMER* pgm, unsigned char* tx, unsigned char* rx, int len);
-static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, char* val);
-//interface - management
-static void linuxspi_setup(PROGRAMMER* pgm);
-static void linuxspi_teardown(PROGRAMMER* pgm);
-//interface - prog
-static int linuxspi_open(PROGRAMMER* pgm, char* port);
-static void linuxspi_close(PROGRAMMER* pgm);
-// dummy functions
-static void linuxspi_disable(PROGRAMMER * pgm);
-static void linuxspi_enable(PROGRAMMER * pgm);
-static void linuxspi_display(PROGRAMMER * pgm, const char * p);
-//universal
-static int linuxspi_initialize(PROGRAMMER* pgm, AVRPART* p);
-// SPI specific functions
-static int linuxspi_cmd(PROGRAMMER * pgm, unsigned char cmd[4], unsigned char res[4]);
-static int linuxspi_program_enable(PROGRAMMER * pgm, AVRPART * p);
-static int linuxspi_chip_erase(PROGRAMMER * pgm, AVRPART * p);
-
-/**
  * @brief Sends/receives a message in full duplex mode
  * @return -1 on failure, otherwise number of bytes sent/recieved
  */
