@@ -213,16 +213,15 @@ static int linuxspi_open(PROGRAMMER *pgm, char *port)
     return 0;
 }
 
-static void linuxspi_close(PROGRAMMER* pgm)
+static void linuxspi_close(PROGRAMMER *pgm)
 {
-    char* buf;
+    char buf[32];
 
     //set reset to input
     linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], "in");
 
     //unexport reset
-    buf = malloc(32);
-    sprintf(buf, "%d", pgm->pinno[PIN_AVR_RESET]);
+    snprintf(buf, sizeof(buf), "%d", pgm->pinno[PIN_AVR_RESET]);
     linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_UNEXPORT, pgm->pinno[PIN_AVR_RESET], buf);
 }
 
