@@ -1,7 +1,7 @@
 /*
  * avrdude - A Downloader/Uploader for AVR device programmers
  * Support for using spidev userspace drivers to communicate directly over SPI
- * 
+ *
  * Copyright (C) 2013 Kevin Cuzner <kevin@kevincuzner.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ *
  * Support for inversion of reset pin, Tim Chilton 02/05/2014
  */
 
@@ -33,11 +33,11 @@
 
 /**
  * Linux Kernel SPI Drivers
- * 
+ *
  * Copyright (C) 2006 SWAPP
  *      Andrea Paterniani <a.paterniani@swapp-eng.it>
  * Copyright (C) 2007 David Brownell (simplification, cleanup)
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -111,7 +111,7 @@ static int linuxspi_spi_duplex(PROGRAMMER* pgm, unsigned char* tx, unsigned char
         fprintf(stderr, "\n%s: error: Unable to open SPI port %s", progname, pgm->port);
         return -1; //error
     }
-    
+
     struct spi_ioc_transfer tr = {
         .tx_buf = (unsigned long)tx,
         .rx_buf = (unsigned long)rx,
@@ -121,23 +121,23 @@ static int linuxspi_spi_duplex(PROGRAMMER* pgm, unsigned char* tx, unsigned char
 	.speed_hz = pgm->baudrate==0?400000:pgm->baudrate,
         .bits_per_word = 8,
     };
-    
+
     int ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
     close(fd);
-    
+
     if (ret != len)
     {
         fprintf(stderr, "\n%s: error: Unable to send SPI message\n", progname);
         return -1;
     }
-    
+
     return ret;
 }
 
 /**
  * @brief Performs an operation on a gpio. Writes to stderr if error.
  * @param op Operation to perform
- * @param gpio 
+ * @param gpio
  * @return -1 if failed, 0 otherwise
  */
 static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, char* val)
@@ -163,9 +163,9 @@ static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, c
             fprintf(stderr, "%s: linuxspi_gpio_op_wr(): Unknown op %d", progname, op);
             return -1;
     }
-    
+
     FILE* f = fopen(fn, "w");
-    
+
     int fopen_retries = 0;
     while (!f && fopen_retries < 100)
     {
@@ -180,17 +180,17 @@ static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, c
         free(fn); //we no longer need the path
         return -1;
     }
-    
+
     if (fprintf(f, val) < 0)
     {
         fprintf(stderr, "%s: linuxspi_gpio_op_wr(): Unable to write file %s with %s", progname, fn, val);
         free(fn); //we no longer need the path
         return -1;
     }
-    
+
     fclose(f);
     free(fn); //we no longer need the path
-    
+
     return 0;
 }
 
@@ -210,15 +210,15 @@ static void linuxspi_teardown(PROGRAMMER* pgm)
 }
 
 static int linuxspi_open(PROGRAMMER* pgm, char* port)
-{   
+{
     char* buf;
-    
+
     if (port == 0 || strcmp(port, "unknown") == 0) //unknown port
     {
         fprintf(stderr, "%s: error: No port specified. Port should point to an SPI interface.\n", progname);
         exit(1);
     }
-    
+
     if (pgm->pinno[PIN_AVR_RESET] == 0)
     {
         fprintf(stderr, "%s: error: No pin assigned to AVR RESET.\n", progname);
@@ -234,27 +234,27 @@ static int linuxspi_open(PROGRAMMER* pgm, char* port)
         return -1;
     }
     free(buf);
-    
+
     //set reset to output active and write initial value at same time
     //this prevents glitches https://www.kernel.org/doc/Documentation/gpio/sysfs.txt
     if (linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], pgm->pinno[PIN_AVR_RESET]&PIN_INVERSE ? "high" : "low") < 0)
     {
         return -1;
     }
-    
+
     //save the port to our data
     strcpy(pgm->port, port);
-    
+
     return 0;
 }
 
 static void linuxspi_close(PROGRAMMER* pgm)
 {
     char* buf;
-    
+
     //set reset to input
     linuxspi_gpio_op_wr(pgm, LINUXSPI_GPIO_DIRECTION, pgm->pinno[PIN_AVR_RESET], "in");
-    
+
     //unexport reset
     buf = malloc(32);
     sprintf(buf, "%d", pgm->pinno[PIN_AVR_RESET]);
@@ -279,14 +279,14 @@ static void linuxspi_display(PROGRAMMER* pgm, const char* p)
 static int linuxspi_initialize(PROGRAMMER* pgm, AVRPART* p)
 {
     int tries, rc;
-    
+
     if (p->flags & AVRPART_HAS_TPI)
     {
         //we do not support tpi..this is a dedicated SPI thing
         fprintf(stderr, "%s: error: Programmer %s does not support TPI\n", progname, pgm->type);
         return -1;
     }
-    
+
     //enable programming on the part
     tries = 0;
     do
@@ -297,13 +297,13 @@ static int linuxspi_initialize(PROGRAMMER* pgm, AVRPART* p)
         tries++;
     }
     while(tries < 65);
-    
+
     if (rc)
     {
         fprintf(stderr, "%s: error: AVR device not responding\n", progname);
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -316,20 +316,20 @@ static int linuxspi_program_enable(PROGRAMMER* pgm, AVRPART* p)
 {
     unsigned char cmd[4];
     unsigned char res[4];
-    
+
     if (p->op[AVR_OP_PGM_ENABLE] == NULL)
     {
         fprintf(stderr, "%s: error: program enable instruction not defined for part \"%s\"\n", progname, p->desc);
         return -1;
     }
-    
+
     memset(cmd, 0, sizeof(cmd));
     avr_set_bits(p->op[AVR_OP_PGM_ENABLE], cmd); //set the cmd
     pgm->cmd(pgm, cmd, res);
-    
+
     if (res[2] != cmd[1])
         return -2;
-    
+
     return 0;
 }
 
@@ -337,29 +337,29 @@ static int linuxspi_chip_erase(PROGRAMMER* pgm, AVRPART* p)
 {
     unsigned char cmd[4];
     unsigned char res[4];
-    
+
     if (p->op[AVR_OP_CHIP_ERASE] == NULL)
     {
         fprintf(stderr, "%s: error: chip erase instruction not defined for part \"%s\"\n", progname, p->desc);
         return -1;
     }
-    
+
     memset(cmd, 0, sizeof(cmd));
 
     avr_set_bits(p->op[AVR_OP_CHIP_ERASE], cmd);
     pgm->cmd(pgm, cmd, res);
     usleep(p->chip_erase_delay);
     pgm->initialize(pgm, p);
-    
+
     return 0;
 }
 
 void linuxspi_initpgm(PROGRAMMER * pgm)
 {
     strcpy(pgm->type, "linuxspi");
-    
+
     pgm_fill_old_pins(pgm); // TODO to be removed if old pin data no longer needed
-    
+
     /*
      * mandatory functions
      */
