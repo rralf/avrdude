@@ -3,6 +3,7 @@
  * Support for using spidev userspace drivers to communicate directly over SPI
  *
  * Copyright (C) 2013 Kevin Cuzner <kevin@kevincuzner.com>
+ * Copyright (C) 2018 Ralf Ramsauer <ralf@vmexit.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +20,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Support for inversion of reset pin, Tim Chilton 02/05/2014
+ * Review code, rebase to latest trunk, add linux/gpio.h support, Ralf Ramsauer 2018-09-07
  */
 
 
