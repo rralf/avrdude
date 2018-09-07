@@ -91,7 +91,7 @@ static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigne
 
     ret = ioctl(fd_spidev, SPI_IOC_MESSAGE(1), &tr);
     if (ret != len)
-        fprintf(stderr, "\n%s: error: Unable to send SPI message\n", progname);
+        avrdude_message(MSG_INFO, "\n%s: error: Unable to send SPI message\n", progname);
 
     return (ret == -1) ? -1 : 0;
 }
@@ -101,7 +101,7 @@ static void linuxspi_setup(PROGRAMMER *pgm)
     pgm->cookie = malloc(sizeof(struct pdata));
 
     if (!pgm->cookie) {
-        fprintf(stderr, "%s: linuxspi_setup(): Unable to allocate memory.\n", progname);
+        avrdude_message(MSG_INFO, "%s: linuxspi_setup(): Unable to allocate memory.\n", progname);
         exit(1);
     }
 
@@ -122,19 +122,19 @@ static int linuxspi_open(PROGRAMMER *pgm, char *port)
     int ret;
 
     if (!port || !strcmp(port, "unknown")) {
-        fprintf(stderr, "%s: error: No port specified. Port should point to an spidev device.\n", progname);
+        avrdude_message(MSG_INFO, "%s: error: No port specified. Port should point to an spidev device.\n", progname);
         return -1;
     }
 
     spidev = strtok(port, ":");
     if (!spidev) {
-        fprintf(stderr, port_error, progname);
+        avrdude_message(MSG_INFO, port_error, progname);
         return -1;
     }
 
     gpiochip = strtok(NULL, ":");
     if (!gpiochip) {
-        fprintf(stderr, port_error, progname);
+        avrdude_message(MSG_INFO, port_error, progname);
         return -1;
     }
 
@@ -146,14 +146,14 @@ static int linuxspi_open(PROGRAMMER *pgm, char *port)
     strcpy(pgm->port, port);
     fd_spidev = open(pgm->port, O_RDWR);
     if (fd_spidev < 0) {
-        fprintf(stderr, "\n%s: error: Unable to open the spidev device %s", progname, pgm->port);
+        avrdude_message(MSG_INFO, "\n%s: error: Unable to open the spidev device %s", progname, pgm->port);
         return -1;
     }
 
     fd_gpiochip = open(gpiochip, 0);
     if (fd_gpiochip < 0) {
         close(fd_spidev);
-        fprintf(stderr, "\n%s error: Unable to open the gpiochip %s", progname, gpiochip);
+        avrdude_message(MSG_INFO, "\n%s error: Unable to open the gpiochip %s", progname, gpiochip);
         ret = -1;
         goto close_spidev;
     }
@@ -217,7 +217,7 @@ static int linuxspi_initialize(PROGRAMMER *pgm, AVRPART *p)
 
     if (p->flags & AVRPART_HAS_TPI) {
         /* We do not support tpi. This is a dedicated SPI thing */
-        fprintf(stderr, "%s: error: Programmer " LINUXSPI " does not support TPI\n", progname);
+        avrdude_message(MSG_INFO, "%s: error: Programmer " LINUXSPI " does not support TPI\n", progname);
         return -1;
     }
 
@@ -231,7 +231,7 @@ static int linuxspi_initialize(PROGRAMMER *pgm, AVRPART *p)
     } while(tries++ < 65);
 
     if (ret)
-        fprintf(stderr, "%s: error: AVR device not responding\n", progname);
+        avrdude_message(MSG_INFO, "%s: error: AVR device not responding\n", progname);
 
     return ret;
 }
@@ -246,7 +246,7 @@ static int linuxspi_program_enable(PROGRAMMER *pgm, AVRPART *p)
     unsigned char cmd[4], res[4];
 
     if (!p->op[AVR_OP_PGM_ENABLE]) {
-        fprintf(stderr, "%s: error: program enable instruction not defined for part \"%s\"\n", progname, p->desc);
+        avrdude_message(MSG_INFO, "%s: error: program enable instruction not defined for part \"%s\"\n", progname, p->desc);
         return -1;
     }
 
@@ -265,7 +265,7 @@ static int linuxspi_chip_erase(PROGRAMMER *pgm, AVRPART *p)
     unsigned char cmd[4], res[4];
 
     if (!p->op[AVR_OP_CHIP_ERASE]) {
-        fprintf(stderr, "%s: error: chip erase instruction not defined for part \"%s\"\n", progname, p->desc);
+        avrdude_message(MSG_INFO, "%s: error: chip erase instruction not defined for part \"%s\"\n", progname, p->desc);
         return -1;
     }
 
@@ -308,9 +308,8 @@ const char linuxspi_desc[] = "SPI using Linux spidev driver";
 
 void linuxspi_initpgm(PROGRAMMER * pgm)
 {
-    fprintf(stderr,
-      "%s: Linux SPI driver not available in this configuration\n",
-      progname);
+    avrdude_message(MSG_INFO, "%s: Linux SPI driver not available in this configuration\n",
+                    progname);
 }
 
 const char linuxspi_desc[] = "SPI using Linux spidev driver (not available)";
