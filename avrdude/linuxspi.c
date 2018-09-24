@@ -62,15 +62,7 @@
 
 #define LINUXSPI "linuxspi"
 
-struct pdata
-{
-    unsigned int speedHz;
-};
-
 static int fd_spidev, fd_gpiochip, fd_linehandle;
-
-#define PDATA(pgm) ((struct pdata *)(pgm->cookie))
-#define IMPORT_PDATA(pgm) struct pdata *pdata = PDATA(pgm)
 
 /**
  * @brief Sends/receives a message in full duplex mode
@@ -100,19 +92,10 @@ static int linuxspi_spi_duplex(PROGRAMMER *pgm, const unsigned char *tx, unsigne
 
 static void linuxspi_setup(PROGRAMMER *pgm)
 {
-    pgm->cookie = malloc(sizeof(struct pdata));
-
-    if (!pgm->cookie) {
-        avrdude_message(MSG_INFO, "%s: linuxspi_setup(): Unable to allocate memory.\n", progname);
-        exit(1);
-    }
-
-    memset(pgm->cookie, 0, sizeof(struct pdata));
 }
 
 static void linuxspi_teardown(PROGRAMMER* pgm)
 {
-    free(pgm->cookie);
 }
 
 static int linuxspi_open(PROGRAMMER *pgm, char *port)
