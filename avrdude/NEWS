@@ -1,4 +1,4 @@
-$Id: NEWS 1425 2018-01-21 22:45:45Z joerg_wunsch $
+$Id: NEWS 1429 2019-01-05 23:16:11Z joerg_wunsch $
 
 Approximate change log for AVRDUDE by version.
 
@@ -64,8 +64,9 @@ Current:
     patch #8311: Add IPv6 support to the -Pnet:host:port option
     patch #9542: Correct "usersig" on avr8x devices
     patch #8128: Added new option to configure.ac script
-    patch #8444: Proposal for modifications in -B and -U command options managment
-    (partially)
+    patch #8444: Proposal for modifications in -B and -U command options managment (partially)
+    patch #9735: spelling error fix: psuedo -> pseudo
+    patch #9728: Fix UsbTiny programmer
 
   * Internals:
     - New avrdude.conf keyword "family_id", used to verify SIB attributes

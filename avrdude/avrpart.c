@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* $Id: avrpart.c 1332 2014-08-18 21:43:08Z rliebscher $ */
+/* $Id: avrpart.c 1428 2019-01-05 23:01:56Z joerg_wunsch $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -645,7 +645,7 @@ void avr_display(FILE * f, AVRPART * p, const char * prefix, int verbose)
           prefix, avr_pin_name(p->retry_pulse),
           prefix, (p->flags & AVRPART_SERIALOK) ? "yes" : "no",
           prefix, (p->flags & AVRPART_PARALLELOK) ?
-            ((p->flags & AVRPART_PSEUDOPARALLEL) ? "psuedo" : "yes") : "no",
+            ((p->flags & AVRPART_PSEUDOPARALLEL) ? "pseudo" : "yes") : "no",
           prefix, p->timeout,
           prefix, p->stabdelay,
           prefix, p->cmdexedelay,
